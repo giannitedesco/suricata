@@ -720,7 +720,7 @@ static void PrintUsage(const char *progname)
 
     printf("\n  Info:\n");
     printf("\t-V                                   : display Suricata version\n");
-    printf("\t--list-keywords[=all|csv|<kword>]    : list keywords implemented by the engine\n");
+    printf("\t--list-keywords[=all|csv|json|<kw>]  : list keywords implemented by the engine\n");
     printf("\t--list-runmodes                      : list supported runmodes\n");
     printf("\t--list-app-layer-protos              : list supported app layer protocols\n");
     printf("\t--list-app-layer-hooks               : list supported app layer hooks for use in "

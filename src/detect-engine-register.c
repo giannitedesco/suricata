@@ -429,6 +429,158 @@ int SigTableList(const char *keyword)
                 SigMultilinePrint(i, "\t");
             }
         }
+    } else if (strcmp("json", keyword) == 0) {
+        for (i = 0; i < size; i++) {
+            const SigTableElmt * const cur = &sigmatch_table[i];
+            const char * const name = cur->name;
+
+            if (name == NULL || strlen(name) <= 0) {
+                continue;
+            }
+
+            if (name[0] == '_' || strcmp(name, "template") == 0)
+                continue;
+
+            SCJsonBuilder * const jb = SCJbNewObject();
+
+            SCJbSetString(jb, "name", name);
+            if (cur->alias) {
+                SCJbSetString(jb, "alias", cur->alias);
+            }
+            if (cur->alternative) {
+                SCJbSetString(jb, "alternative", sigmatch_table[cur->alternative].name);
+            }
+            if (cur->flags) {
+                SCJbOpenArray(jb, "flags");
+                if (cur->flags & SIGMATCH_NOOPT) {
+                    SCJbAppendString(jb, "noopt");
+                }
+                if (cur->flags & SIGMATCH_IPONLY_COMPAT) {
+                    SCJbAppendString(jb, "iponly-compat");
+                }
+                if (cur->flags & SIGMATCH_DEONLY_COMPAT) {
+                    SCJbAppendString(jb, "deonly-compat");
+                }
+                if (cur->flags & SIGMATCH_OPTIONAL_OPT) {
+                    SCJbAppendString(jb, "optional-opt");
+                }
+                if (cur->flags & SIGMATCH_QUOTES_OPTIONAL) {
+                    SCJbAppendString(jb, "quotes-optional");
+                }
+                if (cur->flags & SIGMATCH_QUOTES_MANDATORY) {
+                    SCJbAppendString(jb, "quotes-mandatory");
+                }
+                if (cur->flags & SIGMATCH_HANDLE_NEGATION) {
+                    SCJbAppendString(jb, "handle-negation");
+                }
+                if (cur->flags & SIGMATCH_INFO_CONTENT_MODIFIER) {
+                    SCJbAppendString(jb, "content-modifier");
+                }
+                if (cur->flags & SIGMATCH_INFO_STICKY_BUFFER) {
+                    SCJbAppendString(jb, "sticky-buffer");
+                }
+                if (cur->flags & SIGMATCH_INFO_DEPRECATED) {
+                    SCJbAppendString(jb, "deprecated");
+                }
+                if (cur->flags & SIGMATCH_STRICT_PARSING) {
+                    SCJbAppendString(jb, "strict-parsing");
+                }
+                if (cur->flags & SIGMATCH_SUPPORT_FIREWALL) {
+                    SCJbAppendString(jb, "support-firewall");
+                }
+                if (cur->flags & SIGMATCH_SUPPORT_DIR) {
+                    SCJbAppendString(jb, "support-dir");
+                }
+                SCJbClose(jb);
+            }
+            if (cur->tables) {
+                SCJbOpenArray(jb, "tables");
+                if (cur->tables & DETECT_TABLE_PACKET_PRE_FLOW_FLAG) {
+                    SCJbAppendString(jb, "packet-pre-flow");
+                }
+                if (cur->tables & DETECT_TABLE_PACKET_PRE_STREAM_FLAG) {
+                    SCJbAppendString(jb, "packet-pre-stream");
+                }
+                if (cur->tables & DETECT_TABLE_PACKET_FILTER_FLAG) {
+                    SCJbAppendString(jb, "packet-filter");
+                }
+                if (cur->tables & DETECT_TABLE_PACKET_TD_FLAG) {
+                    SCJbAppendString(jb, "packet-td");
+                }
+                if (cur->tables & DETECT_TABLE_APP_FILTER_FLAG) {
+                    SCJbAppendString(jb, "app-filter");
+                }
+                if (cur->tables & DETECT_TABLE_APP_TD_FLAG) {
+                    SCJbAppendString(jb, "app-td");
+                }
+                SCJbClose(jb);
+            }
+            SCJbOpenArray(jb, "callbacks");
+            if (cur->Match) {
+                SCJbAppendString(jb, "match");
+            }
+            if (cur->AppLayerTxMatch) {
+                SCJbAppendString(jb, "app-layer-tx-match");
+            }
+            if (cur->FileMatch) {
+                SCJbAppendString(jb, "file-match");
+            }
+            if (cur->Transform) {
+                SCJbAppendString(jb, "transform");
+            }
+            if (cur->TransformValidate) {
+                SCJbAppendString(jb, "transform-validate");
+            }
+            if (cur->TransformId) {
+                SCJbAppendString(jb, "transform-id");
+            }
+            if (cur->Setup) {
+                SCJbAppendString(jb, "setup");
+            }
+            if (cur->SupportsPrefilter) {
+                SCJbAppendString(jb, "supports-prefilter");
+            }
+            if (cur->SetupPrefilter) {
+                SCJbAppendString(jb, "setup-prefilter");
+            }
+            if (cur->Free) {
+                SCJbAppendString(jb, "free");
+            }
+#ifdef UNITTESTS
+            if (cur->RegisterTests) {
+                SCJbAppendString(jb, "register-tests");
+            }
+#endif
+            if (cur->Cleanup) {
+                SCJbAppendString(jb, "cleanup");
+            }
+            SCJbClose(jb);
+            if (cur->desc) {
+                SCJbSetString(jb, "description", cur->desc);
+            }
+            if (cur->url) {
+                char *doc_url;
+
+                /* FIXME: Should add SCASPrintf to be consistent with other allocations */
+                asprintf(&doc_url, "%s%s", GetDocURL(), cur->url);
+
+                SCJbSetString(jb, "documentation", doc_url);
+
+                free(doc_url);
+            }
+            SCJbClose(jb);
+
+            const uint8_t * buf = SCJbPtr(jb);
+
+            if (buf) {
+                const size_t len = SCJbLen(jb);
+
+                fwrite(buf, 1, len, stdout);
+                fputc('\n', stdout);
+            }
+
+            SCJbFree(jb);
+        }
     } else {
         for (i = 0; i < size; i++) {
             if ((sigmatch_table[i].name != NULL) &&
