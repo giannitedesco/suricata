@@ -38,6 +38,7 @@
 #include "detect-engine-uint.h"
 #include "util-debug.h"
 #include "util-byte.h"
+#include "rust.h"
 
 
 /*prototypes*/
@@ -55,6 +56,32 @@ static bool PrefilterStreamSizeIsPrefilterable(const Signature *s);
  * \brief Registration function for stream_size: keyword
  */
 
+static const char *StreamSizeFlagsToString(uint8_t flags)
+{
+    switch (flags) {
+        case StreamSizeServer:
+            return "server";
+        case StreamSizeClient:
+            return "client";
+        case StreamSizeBoth:
+            return "both";
+        case StreamSizeEither:
+            return "either";
+        default:
+            return "unknown";
+    }
+}
+
+static void DetectStreamSizeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectStreamSizeData *sd = (const DetectStreamSizeData *)ctx;
+
+    SCJbSetString(jb, "flags", StreamSizeFlagsToString(sd->flags));
+    SCJbSetUint(jb, "mode", (uint64_t)sd->du32.mode);
+    SCJbSetUint(jb, "arg1", (uint64_t)sd->du32.arg1);
+    SCJbSetUint(jb, "arg2", (uint64_t)sd->du32.arg2);
+}
+
 void DetectStreamSizeRegister(void)
 {
     sigmatch_table[DETECT_STREAM_SIZE].name = "stream_size";
@@ -63,6 +90,7 @@ void DetectStreamSizeRegister(void)
     sigmatch_table[DETECT_STREAM_SIZE].Match = DetectStreamSizeMatch;
     sigmatch_table[DETECT_STREAM_SIZE].Setup = DetectStreamSizeSetup;
     sigmatch_table[DETECT_STREAM_SIZE].Free = DetectStreamSizeFree;
+    sigmatch_table[DETECT_STREAM_SIZE].DumpJSON = DetectStreamSizeDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_STREAM_SIZE].RegisterTests = DetectStreamSizeRegisterTests;
 #endif

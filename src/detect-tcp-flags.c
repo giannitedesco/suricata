@@ -40,6 +40,7 @@
 #include "util-unittest-helper.h"
 
 #include "util-debug.h"
+#include "rust.h"
 
 /**
  *  Regex (by Brian Rectanus)
@@ -69,6 +70,53 @@ static int PrefilterSetupTcpFlags(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static void FlagsRegisterTests(void);
 #endif
 
+static void DetectFlagsFlagsToArray(uint8_t flags, struct SCJsonBuilder *jb)
+{
+    if (flags & TH_FIN)
+        SCJbAppendString(jb, "FIN");
+    if (flags & TH_SYN)
+        SCJbAppendString(jb, "SYN");
+    if (flags & TH_RST)
+        SCJbAppendString(jb, "RST");
+    if (flags & TH_PUSH)
+        SCJbAppendString(jb, "PSH");
+    if (flags & TH_ACK)
+        SCJbAppendString(jb, "ACK");
+    if (flags & TH_URG)
+        SCJbAppendString(jb, "URG");
+    if (flags & TH_ECN)
+        SCJbAppendString(jb, "ECN");
+    if (flags & TH_CWR)
+        SCJbAppendString(jb, "CWR");
+}
+
+static void DetectFlagsDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectFlagsData *fd = (const DetectFlagsData *)ctx;
+
+    SCJbOpenArray(jb, "flags");
+    DetectFlagsFlagsToArray(fd->flags, jb);
+    SCJbClose(jb);
+
+    char mod[2] = { 0, 0 };
+    switch (fd->modifier) {
+        case MODIFIER_NOT:
+            mod[0] = '!';
+            break;
+        case MODIFIER_PLUS:
+            mod[0] = '+';
+            break;
+        case MODIFIER_ANY:
+            mod[0] = '*';
+            break;
+    }
+    SCJbSetString(jb, "modifier", mod);
+
+    SCJbOpenArray(jb, "ignored_flags");
+    DetectFlagsFlagsToArray(fd->ignored_flags, jb);
+    SCJbClose(jb);
+}
+
 /**
  * \brief Registration function for flags: keyword
  */
@@ -88,6 +136,7 @@ void DetectFlagsRegister (void)
 #endif
     sigmatch_table[DETECT_FLAGS].SupportsPrefilter = PrefilterTcpFlagsIsPrefilterable;
     sigmatch_table[DETECT_FLAGS].SetupPrefilter = PrefilterSetupTcpFlags;
+    sigmatch_table[DETECT_FLAGS].DumpJSON = DetectFlagsDumpJSON;
 
     DetectSetupParseRegexes(PARSE_REGEX, &parse_regex);
 }

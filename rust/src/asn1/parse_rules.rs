@@ -25,6 +25,8 @@ use nom7::{Err, IResult};
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+use crate::jsonbuilder::JsonBuilder;
+
 const ASN1_DEFAULT_MAX_FRAMES: u16 = 30;
 
 /// Parse the asn1 keyword and return a pointer to a `DetectAsn1Data`
@@ -67,6 +69,22 @@ pub unsafe extern "C" fn SCAsn1DetectParse(input: *const c_char) -> *mut DetectA
             std::ptr::null_mut()
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn SCAsn1DetectDumpJson(ad: &DetectAsn1Data, jb: &mut JsonBuilder) {
+    let _ = jb.set_bool("bitstring_overflow", ad.bitstring_overflow);
+    let _ = jb.set_bool("double_overflow", ad.double_overflow);
+    if let Some(v) = ad.oversize_length {
+        let _ = jb.set_uint("oversize_length", v);
+    }
+    if let Some(v) = ad.absolute_offset {
+        let _ = jb.set_uint("absolute_offset", v);
+    }
+    if let Some(v) = ad.relative_offset {
+        let _ = jb.set_int("relative_offset", v.into());
+    }
+    let _ = jb.set_uint("max_frames", ad.max_frames);
 }
 
 /// Free a `DetectAsn1Data` object allocated by Rust
@@ -125,10 +143,7 @@ fn parse_i32_number(input: &str) -> IResult<&str, i32> {
 pub(super) fn asn1_parse_rule(input: &str) -> IResult<&str, DetectAsn1Data> {
     // If nothing to parse, return
     if input.is_empty() {
-        return Err(Err::Error(make_error(
-            input,
-            ErrorKind::Eof,
-        )));
+        return Err(Err::Error(make_error(input, ErrorKind::Eof)));
     }
 
     // Rule parsing functions
@@ -196,10 +211,7 @@ pub(super) fn asn1_parse_rule(input: &str) -> IResult<&str, DetectAsn1Data> {
         } else if let Some((_, v)) = relative_offset {
             data.relative_offset = Some(v);
         } else {
-            return Err(Err::Error(make_error(
-                rest,
-                ErrorKind::Verify,
-            )));
+            return Err(Err::Error(make_error(rest, ErrorKind::Verify)));
         }
 
         rest = new_rest;

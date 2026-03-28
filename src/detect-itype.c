@@ -38,7 +38,7 @@
 #include "util-unittest.h"
 #include "util-unittest-helper.h"
 #include "util-debug.h"
-
+#include "rust.h"
 
 static int DetectITypeMatch(DetectEngineThreadCtx *, Packet *,
         const Signature *, const SigMatchCtx *);
@@ -50,6 +50,14 @@ void DetectITypeFree(DetectEngineCtx *, void *);
 
 static int PrefilterSetupIType(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterITypeIsPrefilterable(const Signature *s);
+
+static void DetectITypeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectU8Data *du8 = (const DetectU8Data *)ctx;
+    SCJbSetUint(jb, "mode", (uint64_t)du8->mode);
+    SCJbSetUint(jb, "arg1", (uint64_t)du8->arg1);
+    SCJbSetUint(jb, "arg2", (uint64_t)du8->arg2);
+}
 
 /**
  * \brief Registration function for itype: keyword
@@ -68,6 +76,7 @@ void DetectITypeRegister (void)
 #endif
     sigmatch_table[DETECT_ITYPE].SupportsPrefilter = PrefilterITypeIsPrefilterable;
     sigmatch_table[DETECT_ITYPE].SetupPrefilter = PrefilterSetupIType;
+    sigmatch_table[DETECT_ITYPE].DumpJSON = DetectITypeDumpJSON;
 }
 
 /**

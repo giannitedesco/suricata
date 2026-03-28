@@ -40,6 +40,7 @@
 #include "util-unittest.h"
 #include "util-unittest-helper.h"
 #include "util-debug.h"
+#include "rust.h"
 
 /**
  * \brief Regex for parsing our flow options
@@ -59,6 +60,34 @@ void DetectFlowFree(DetectEngineCtx *, void *);
 static int PrefilterSetupFlow(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterFlowIsPrefilterable(const Signature *s);
 
+static void DetectFlowDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectFlowData *fd = (const DetectFlowData *)ctx;
+
+    SCJbOpenArray(jb, "flags");
+    if (fd->flags & DETECT_FLOW_FLAG_TOSERVER)
+        SCJbAppendString(jb, "toserver");
+    if (fd->flags & DETECT_FLOW_FLAG_TOCLIENT)
+        SCJbAppendString(jb, "toclient");
+    if (fd->flags & DETECT_FLOW_FLAG_ESTABLISHED)
+        SCJbAppendString(jb, "established");
+    if (fd->flags & DETECT_FLOW_FLAG_NOT_ESTABLISHED)
+        SCJbAppendString(jb, "not_established");
+    if (fd->flags & DETECT_FLOW_FLAG_STATELESS)
+        SCJbAppendString(jb, "stateless");
+    if (fd->flags & DETECT_FLOW_FLAG_ONLYSTREAM)
+        SCJbAppendString(jb, "only_stream");
+    if (fd->flags & DETECT_FLOW_FLAG_NOSTREAM)
+        SCJbAppendString(jb, "no_stream");
+    if (fd->flags & DETECT_FLOW_FLAG_NO_FRAG)
+        SCJbAppendString(jb, "no_frag");
+    if (fd->flags & DETECT_FLOW_FLAG_ONLY_FRAG)
+        SCJbAppendString(jb, "only_frag");
+    SCJbClose(jb);
+
+    SCJbSetUint(jb, "match_cnt", (uint64_t)fd->match_cnt);
+}
+
 /**
  * \brief Registration function for flow: keyword
  */
@@ -70,6 +99,7 @@ void DetectFlowRegister (void)
     sigmatch_table[DETECT_FLOW].Match = DetectFlowMatch;
     sigmatch_table[DETECT_FLOW].Setup = DetectFlowSetup;
     sigmatch_table[DETECT_FLOW].Free  = DetectFlowFree;
+    sigmatch_table[DETECT_FLOW].DumpJSON = DetectFlowDumpJSON;
     sigmatch_table[DETECT_FLOW].flags = SIGMATCH_SUPPORT_FIREWALL;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_FLOW].RegisterTests = DetectFlowRegisterTests;

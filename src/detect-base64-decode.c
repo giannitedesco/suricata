@@ -45,6 +45,15 @@ static void DetectBase64DecodeFree(DetectEngineCtx *, void *);
 static void DetectBase64DecodeRegisterTests(void);
 #endif
 
+static void DetectBase64DecodeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectBase64Decode *data = (const DetectBase64Decode *)ctx;
+
+    SCJbSetUint(jb, "bytes", (uint64_t)data->bytes);
+    SCJbSetUint(jb, "offset", (uint64_t)data->offset);
+    SCJbSetBool(jb, "relative", data->relative != 0);
+}
+
 void DetectBase64DecodeRegister(void)
 {
     sigmatch_table[DETECT_BASE64_DECODE].name = "base64_decode";
@@ -54,6 +63,7 @@ void DetectBase64DecodeRegister(void)
         "/rules/base64-keywords.html#base64-decode";
     sigmatch_table[DETECT_BASE64_DECODE].Setup = DetectBase64DecodeSetup;
     sigmatch_table[DETECT_BASE64_DECODE].Free = DetectBase64DecodeFree;
+    sigmatch_table[DETECT_BASE64_DECODE].DumpJSON = DetectBase64DecodeDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BASE64_DECODE].RegisterTests =
         DetectBase64DecodeRegisterTests;

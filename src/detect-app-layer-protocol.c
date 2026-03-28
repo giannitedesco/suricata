@@ -394,6 +394,45 @@ static bool PrefilterAppProtoIsPrefilterable(const Signature *s)
     return false;
 }
 
+static void DetectAppLayerProtocolDumpJSON(const SigMatchCtx *ctx, SCJsonBuilder *jb)
+{
+    const DetectAppLayerProtocolData * const data = (const DetectAppLayerProtocolData *)ctx;
+    const char * const alproto_name = AppLayerGetProtoName(data->alproto);
+
+    if (alproto_name != NULL) {
+        SCJbSetString(jb, "protocol", alproto_name);
+    } else {
+        SCJbSetUint(jb, "protocol_id", data->alproto);
+    }
+
+    SCJbSetBool(jb, "negated", data->negated);
+
+    const char *mode_str = "unknown";
+
+    switch (data->mode) {
+        case DETECT_ALPROTO_DIRECTION:
+            mode_str = "direction";
+            break;
+        case DETECT_ALPROTO_ORIG:
+            mode_str = "original";
+            break;
+        case DETECT_ALPROTO_FINAL:
+            mode_str = "final";
+            break;
+        case DETECT_ALPROTO_TOSERVER:
+            mode_str = "to_server";
+            break;
+        case DETECT_ALPROTO_TOCLIENT:
+            mode_str = "to_client";
+            break;
+        case DETECT_ALPROTO_EITHER:
+            mode_str = "either";
+            break;
+    }
+
+    SCJbSetString(jb, "mode", mode_str);
+}
+
 void DetectAppLayerProtocolRegister(void)
 {
     sigmatch_table[DETECT_APP_LAYER_PROTOCOL].name = "app-layer-protocol";
@@ -402,6 +441,7 @@ void DetectAppLayerProtocolRegister(void)
     sigmatch_table[DETECT_APP_LAYER_PROTOCOL].Match = DetectAppLayerProtocolPacketMatch;
     sigmatch_table[DETECT_APP_LAYER_PROTOCOL].Setup = DetectAppLayerProtocolSetup;
     sigmatch_table[DETECT_APP_LAYER_PROTOCOL].Free = DetectAppLayerProtocolFree;
+    sigmatch_table[DETECT_APP_LAYER_PROTOCOL].DumpJSON = DetectAppLayerProtocolDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_APP_LAYER_PROTOCOL].RegisterTests = DetectAppLayerProtocolRegisterTests;
 #endif

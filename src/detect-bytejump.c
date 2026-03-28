@@ -43,6 +43,7 @@
 #include "util-validate.h"
 #include "detect-pcre.h"
 #include "detect-engine-build.h"
+#include "rust.h"
 
 /**
  * \brief Regex for parsing our options
@@ -66,6 +67,7 @@ static DetectBytejumpData *DetectBytejumpParse(
         DetectEngineCtx *de_ctx, const char *optstr, char **nbytes, char **offset);
 static int DetectBytejumpSetup(DetectEngineCtx *de_ctx, Signature *s, const char *optstr);
 static void DetectBytejumpFree(DetectEngineCtx*, void *ptr);
+static void DetectBytejumpDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
 #ifdef UNITTESTS
 static void DetectBytejumpRegisterTests(void);
 #endif
@@ -78,10 +80,62 @@ void DetectBytejumpRegister (void)
     sigmatch_table[DETECT_BYTEJUMP].Match = NULL;
     sigmatch_table[DETECT_BYTEJUMP].Setup = DetectBytejumpSetup;
     sigmatch_table[DETECT_BYTEJUMP].Free  = DetectBytejumpFree;
+    sigmatch_table[DETECT_BYTEJUMP].DumpJSON = DetectBytejumpDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BYTEJUMP].RegisterTests = DetectBytejumpRegisterTests;
 #endif
     DetectSetupParseRegexes(PARSE_REGEX, &parse_regex);
+}
+
+static void DetectBytejumpDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectBytejumpData *data = (const DetectBytejumpData *)ctx;
+
+    SCJbSetUint(jb, "nbytes", (uint64_t)data->nbytes);
+
+    switch (data->base) {
+        case DETECT_BYTEJUMP_BASE_OCT:
+            SCJbSetString(jb, "base", "oct");
+            break;
+        case DETECT_BYTEJUMP_BASE_DEC:
+            SCJbSetString(jb, "base", "dec");
+            break;
+        case DETECT_BYTEJUMP_BASE_HEX:
+            SCJbSetString(jb, "base", "hex");
+            break;
+        default:
+            SCJbSetString(jb, "base", "unset");
+            break;
+    }
+
+    SCJbOpenArray(jb, "flags");
+    if (data->flags & DETECT_BYTEJUMP_BEGIN)
+        SCJbAppendString(jb, "from_beginning");
+    if (data->flags & DETECT_BYTEJUMP_LITTLE)
+        SCJbAppendString(jb, "little");
+    if (data->flags & DETECT_BYTEJUMP_BIG)
+        SCJbAppendString(jb, "big");
+    if (data->flags & DETECT_BYTEJUMP_STRING)
+        SCJbAppendString(jb, "string");
+    if (data->flags & DETECT_BYTEJUMP_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (data->flags & DETECT_BYTEJUMP_ALIGN)
+        SCJbAppendString(jb, "align");
+    if (data->flags & DETECT_BYTEJUMP_DCE)
+        SCJbAppendString(jb, "dce");
+    if (data->flags & DETECT_BYTEJUMP_OFFSET_BE)
+        SCJbAppendString(jb, "offset_be");
+    if (data->flags & DETECT_BYTEJUMP_END)
+        SCJbAppendString(jb, "from_end");
+    if (data->flags & DETECT_BYTEJUMP_NBYTES_VAR)
+        SCJbAppendString(jb, "nbytes_var");
+    if (data->flags & DETECT_BYTEJUMP_OFFSET_VAR)
+        SCJbAppendString(jb, "offset_var");
+    SCJbClose(jb);
+
+    SCJbSetInt(jb, "offset", (int64_t)data->offset);
+    SCJbSetInt(jb, "post_offset", (int64_t)data->post_offset);
+    SCJbSetUint(jb, "multiplier", (uint64_t)data->multiplier);
 }
 
 /* 23 - This is the largest string (octal, with a zero prefix) that

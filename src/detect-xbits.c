@@ -53,6 +53,7 @@
 #include "util-var-name.h"
 #include "util-unittest.h"
 #include "util-debug.h"
+#include "rust.h"
 
 /*
     xbits:set,bitname,track ip_pair,expire 60
@@ -67,6 +68,37 @@ static void XBitsRegisterTests(void);
 #endif
 static void DetectXbitFree (DetectEngineCtx *, void *);
 
+static const char *XbitsCmdToString(uint8_t cmd)
+{
+    switch (cmd) {
+        case DETECT_XBITS_CMD_SET:
+            return "set";
+        case DETECT_XBITS_CMD_TOGGLE:
+            return "toggle";
+        case DETECT_XBITS_CMD_UNSET:
+            return "unset";
+        case DETECT_XBITS_CMD_ISNOTSET:
+            return "isnotset";
+        case DETECT_XBITS_CMD_ISSET:
+            return "isset";
+        case DETECT_XBITS_CMD_NOALERT:
+            return "noalert";
+        default:
+            return "unknown";
+    }
+}
+
+static void DetectXbitsDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectXbitsData *xd = (const DetectXbitsData *)ctx;
+
+    SCJbSetUint(jb, "idx", (uint64_t)xd->idx);
+    SCJbSetString(jb, "cmd", XbitsCmdToString(xd->cmd));
+    SCJbSetUint(jb, "tracker", (uint64_t)xd->tracker);
+    SCJbSetUint(jb, "expire", (uint64_t)xd->expire);
+    SCJbSetUint(jb, "type", (uint64_t)xd->type);
+}
+
 void DetectXbitsRegister (void)
 {
     sigmatch_table[DETECT_XBITS].name = "xbits";
@@ -76,6 +108,7 @@ void DetectXbitsRegister (void)
     sigmatch_table[DETECT_XBITS].Match = DetectXbitMatch;
     sigmatch_table[DETECT_XBITS].Setup = DetectXbitSetup;
     sigmatch_table[DETECT_XBITS].Free  = DetectXbitFree;
+    sigmatch_table[DETECT_XBITS].DumpJSON = DetectXbitsDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_XBITS].RegisterTests = XBitsRegisterTests;
 #endif

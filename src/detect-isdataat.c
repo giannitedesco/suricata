@@ -38,6 +38,7 @@
 #include "detect-content.h"
 #include "detect-bytetest.h"
 #include "detect-uricontent.h"
+#include "rust.h"
 #include "detect-engine-build.h"
 
 #include "flow.h"
@@ -151,6 +152,23 @@ bool DetectAbsentValidateContentCallback(const Signature *s, const SignatureInit
     return true;
 }
 
+static void DetectIsdataatDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectIsdataatData *data = (const DetectIsdataatData *)ctx;
+
+    SCJbSetUint(jb, "dataat", (uint64_t)data->dataat);
+    SCJbOpenArray(jb, "flags");
+    if (data->flags & ISDATAAT_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (data->flags & ISDATAAT_RAWBYTES)
+        SCJbAppendString(jb, "rawbytes");
+    if (data->flags & ISDATAAT_NEGATED)
+        SCJbAppendString(jb, "negated");
+    if (data->flags & ISDATAAT_OFFSET_VAR)
+        SCJbAppendString(jb, "offset_var");
+    SCJbClose(jb);
+}
+
 /**
  * \brief Registration function for isdataat: keyword
  */
@@ -163,6 +181,7 @@ void DetectIsdataatRegister(void)
     sigmatch_table[DETECT_ISDATAAT].Match = NULL;
     sigmatch_table[DETECT_ISDATAAT].Setup = DetectIsdataatSetup;
     sigmatch_table[DETECT_ISDATAAT].Free  = DetectIsdataatFree;
+    sigmatch_table[DETECT_ISDATAAT].DumpJSON = DetectIsdataatDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_ISDATAAT].RegisterTests = DetectIsdataatRegisterTests;
 #endif

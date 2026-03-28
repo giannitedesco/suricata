@@ -42,6 +42,13 @@ static void DetectAsn1RegisterTests(void);
 #endif
 static void DetectAsn1Free(DetectEngineCtx *, void *);
 
+static void DetectAsn1DumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectAsn1Data *ad = (const DetectAsn1Data *)ctx;
+
+    SCAsn1DetectDumpJson(ad, jb);
+}
+
 /**
  * \brief Registration function for asn1
  */
@@ -50,6 +57,7 @@ void DetectAsn1Register(void)
     sigmatch_table[DETECT_ASN1].name = "asn1";
     sigmatch_table[DETECT_ASN1].Setup = DetectAsn1Setup;
     sigmatch_table[DETECT_ASN1].Free  = DetectAsn1Free;
+    sigmatch_table[DETECT_ASN1].DumpJSON = DetectAsn1DumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_ASN1].RegisterTests = DetectAsn1RegisterTests;
 #endif

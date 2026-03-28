@@ -39,6 +39,7 @@
 #include "util-unittest.h"
 #include "util-debug.h"
 #include "util-byte.h"
+#include "rust.h"
 
 #include "pkt-var.h"
 #include "host.h"
@@ -54,6 +55,14 @@ static void DetectDsizeFree(DetectEngineCtx *, void *);
 
 static int PrefilterSetupDsize(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterDsizeIsPrefilterable(const Signature *s);
+
+static void DetectDsizeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectU16Data *du16 = (const DetectU16Data *)ctx;
+    SCJbSetUint(jb, "mode", (uint64_t)du16->mode);
+    SCJbSetUint(jb, "arg1", (uint64_t)du16->arg1);
+    SCJbSetUint(jb, "arg2", (uint64_t)du16->arg2);
+}
 
 /**
  * \brief Registration function for dsize: keyword
@@ -72,6 +81,7 @@ void DetectDsizeRegister (void)
 #endif
     sigmatch_table[DETECT_DSIZE].SupportsPrefilter = PrefilterDsizeIsPrefilterable;
     sigmatch_table[DETECT_DSIZE].SetupPrefilter = PrefilterSetupDsize;
+    sigmatch_table[DETECT_DSIZE].DumpJSON = DetectDsizeDumpJSON;
 }
 
 /**

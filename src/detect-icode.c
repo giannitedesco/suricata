@@ -38,6 +38,7 @@
 #include "util-unittest.h"
 #include "util-unittest-helper.h"
 #include "util-debug.h"
+#include "rust.h"
 
 /**
  *\brief Regex for parsing our icode options
@@ -53,6 +54,14 @@ void DetectICodeFree(DetectEngineCtx *, void *);
 
 static int PrefilterSetupICode(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterICodeIsPrefilterable(const Signature *s);
+
+static void DetectICodeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectU8Data *du8 = (const DetectU8Data *)ctx;
+    SCJbSetUint(jb, "mode", (uint64_t)du8->mode);
+    SCJbSetUint(jb, "arg1", (uint64_t)du8->arg1);
+    SCJbSetUint(jb, "arg2", (uint64_t)du8->arg2);
+}
 
 /**
  * \brief Registration function for icode: keyword
@@ -70,6 +79,7 @@ void DetectICodeRegister (void)
 #endif
     sigmatch_table[DETECT_ICODE].SupportsPrefilter = PrefilterICodeIsPrefilterable;
     sigmatch_table[DETECT_ICODE].SetupPrefilter = PrefilterSetupICode;
+    sigmatch_table[DETECT_ICODE].DumpJSON = DetectICodeDumpJSON;
 }
 
 /**

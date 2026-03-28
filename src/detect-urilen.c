@@ -40,6 +40,7 @@
 
 #include "detect-urilen.h"
 #include "util-debug.h"
+#include "rust.h"
 #include "util-byte.h"
 #include "flow-util.h"
 #include "stream-tcp.h"
@@ -54,6 +55,14 @@ static void DetectUrilenRegisterTests (void);
 static int g_http_uri_buffer_id = 0;
 static int g_http_raw_uri_buffer_id = 0;
 
+static void DetectUrilenDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectUrilenData *data = (const DetectUrilenData *)ctx;
+
+    SCDetectU16ToJson(jb, &data->du16);
+    SCJbSetBool(jb, "raw_buffer", data->raw_buffer);
+}
+
 /**
  * \brief Registration function for urilen: keyword
  */
@@ -66,6 +75,7 @@ void DetectUrilenRegister(void)
     sigmatch_table[DETECT_URILEN].Match = NULL;
     sigmatch_table[DETECT_URILEN].Setup = DetectUrilenSetup;
     sigmatch_table[DETECT_URILEN].Free = DetectUrilenFree;
+    sigmatch_table[DETECT_URILEN].DumpJSON = DetectUrilenDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_URILEN].RegisterTests = DetectUrilenRegisterTests;
 #endif

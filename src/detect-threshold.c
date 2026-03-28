@@ -56,6 +56,8 @@
 #include "util-byte.h"
 #include "util-debug.h"
 
+#include "rust.h"
+
 #ifdef UNITTESTS
 #include "util-cpu.h"
 #endif
@@ -97,7 +99,73 @@ void DetectThresholdRegister(void)
     /* this is compatible to ip-only signatures */
     sigmatch_table[DETECT_THRESHOLD].flags |= SIGMATCH_IPONLY_COMPAT;
 
+    sigmatch_table[DETECT_THRESHOLD].DumpJSON = DetectThresholdDumpJSON;
+
     DetectSetupParseRegexes(PARSE_REGEX, &parse_regex);
+}
+
+void DetectThresholdDumpJSON(const SigMatchCtx *ctx, SCJsonBuilder *jb)
+{
+    const DetectThresholdData *td = (const DetectThresholdData *)ctx;
+
+    SCJbSetUint(jb, "count", (uint64_t)td->count);
+    SCJbSetUint(jb, "seconds", (uint64_t)td->seconds);
+
+    switch (td->type) {
+        case TYPE_LIMIT:
+            SCJbSetString(jb, "type", "limit");
+            break;
+        case TYPE_BOTH:
+            SCJbSetString(jb, "type", "both");
+            break;
+        case TYPE_THRESHOLD:
+            SCJbSetString(jb, "type", "threshold");
+            break;
+        case TYPE_DETECTION:
+            SCJbSetString(jb, "type", "detection_filter");
+            break;
+        case TYPE_RATE:
+            SCJbSetString(jb, "type", "rate");
+            break;
+        case TYPE_SUPPRESS:
+            SCJbSetString(jb, "type", "suppress");
+            break;
+        case TYPE_BACKOFF:
+            SCJbSetString(jb, "type", "backoff");
+            break;
+        default:
+            SCJbSetString(jb, "type", "unknown");
+            break;
+    }
+
+    switch (td->track) {
+        case TRACK_DST:
+            SCJbSetString(jb, "track", "by_dst");
+            break;
+        case TRACK_SRC:
+            SCJbSetString(jb, "track", "by_src");
+            break;
+        case TRACK_RULE:
+            SCJbSetString(jb, "track", "by_rule");
+            break;
+        case TRACK_EITHER:
+            SCJbSetString(jb, "track", "either");
+            break;
+        case TRACK_BOTH:
+            SCJbSetString(jb, "track", "by_both");
+            break;
+        case TRACK_FLOW:
+            SCJbSetString(jb, "track", "by_flow");
+            break;
+        default:
+            SCJbSetString(jb, "track", "unknown");
+            break;
+    }
+
+    SCJbSetUint(jb, "new_action", (uint64_t)td->new_action);
+    SCJbSetUint(jb, "timeout", (uint64_t)td->timeout);
+    SCJbSetUint(jb, "flags", (uint64_t)td->flags);
+    SCJbSetUint(jb, "multiplier", (uint64_t)td->multiplier);
 }
 
 static int DetectThresholdMatch(

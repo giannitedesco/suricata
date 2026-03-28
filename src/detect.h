@@ -1412,6 +1412,8 @@ typedef struct DetectEngineThreadCtx_ {
 #endif
 } DetectEngineThreadCtx;
 
+struct SCJsonBuilder;
+
 /** \brief element in sigmatch type table.
  */
 typedef struct SigTableElmt_ {
@@ -1442,6 +1444,10 @@ typedef struct SigTableElmt_ {
     int (*SetupPrefilter)(DetectEngineCtx *de_ctx, struct SigGroupHead_ *sgh);
 
     void (*Free)(DetectEngineCtx *, void *);
+
+    /** JSON dump callback for debugging rule data structures */
+    void (*DumpJSON)(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
+
 #ifdef UNITTESTS
     void (*RegisterTests)(void);
 #endif

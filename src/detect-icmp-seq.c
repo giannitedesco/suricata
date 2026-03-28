@@ -52,6 +52,13 @@ void DetectIcmpSeqFree(DetectEngineCtx *, void *);
 static int PrefilterSetupIcmpSeq(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterIcmpSeqIsPrefilterable(const Signature *s);
 
+static void DetectIcmpSeqDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectIcmpSeqData *iid = (const DetectIcmpSeqData *)ctx;
+
+    SCJbSetUint(jb, "seq", ntohs(iid->seq));
+}
+
 /**
  * \brief Registration function for icmp_seq
  */
@@ -63,6 +70,7 @@ void DetectIcmpSeqRegister (void)
     sigmatch_table[DETECT_ICMP_SEQ].Match = DetectIcmpSeqMatch;
     sigmatch_table[DETECT_ICMP_SEQ].Setup = DetectIcmpSeqSetup;
     sigmatch_table[DETECT_ICMP_SEQ].Free = DetectIcmpSeqFree;
+    sigmatch_table[DETECT_ICMP_SEQ].DumpJSON = DetectIcmpSeqDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_ICMP_SEQ].RegisterTests = DetectIcmpSeqRegisterTests;
 #endif

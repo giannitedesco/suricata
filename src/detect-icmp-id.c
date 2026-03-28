@@ -53,6 +53,13 @@ void DetectIcmpIdFree(DetectEngineCtx *, void *);
 static int PrefilterSetupIcmpId(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 static bool PrefilterIcmpIdIsPrefilterable(const Signature *s);
 
+static void DetectIcmpIdDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectIcmpIdData *iid = (const DetectIcmpIdData *)ctx;
+
+    SCJbSetUint(jb, "id", ntohs(iid->id));
+}
+
 /**
  * \brief Registration function for icode: icmp_id
  */
@@ -63,6 +70,7 @@ void DetectIcmpIdRegister (void)
     sigmatch_table[DETECT_ICMP_ID].url = "/rules/header-keywords.html#icmp-id";
     sigmatch_table[DETECT_ICMP_ID].Match = DetectIcmpIdMatch;
     sigmatch_table[DETECT_ICMP_ID].Setup = DetectIcmpIdSetup;
+    sigmatch_table[DETECT_ICMP_ID].DumpJSON = DetectIcmpIdDumpJSON;
     sigmatch_table[DETECT_ICMP_ID].Free = DetectIcmpIdFree;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_ICMP_ID].RegisterTests = DetectIcmpIdRegisterTests;

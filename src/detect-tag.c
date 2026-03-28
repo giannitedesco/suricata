@@ -47,6 +47,7 @@
 #include "util-unittest-helper.h"
 #include "util-debug.h"
 #include "threads.h"
+#include "rust.h"
 
 SC_ATOMIC_EXTERN(unsigned int, num_tags);
 
@@ -63,6 +64,52 @@ static void DetectTagRegisterTests(void);
 #endif
 void DetectTagDataFree(DetectEngineCtx *, void *);
 
+static void DetectTagDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectTagData *data = (const DetectTagData *)ctx;
+
+    switch (data->type) {
+        case DETECT_TAG_TYPE_SESSION:
+            SCJbSetString(jb, "type", "session");
+            break;
+        case DETECT_TAG_TYPE_HOST:
+            SCJbSetString(jb, "type", "host");
+            break;
+        default:
+            SCJbSetUint(jb, "type", (uint64_t)data->type);
+            break;
+    }
+
+    switch (data->direction) {
+        case DETECT_TAG_DIR_SRC:
+            SCJbSetString(jb, "direction", "src");
+            break;
+        case DETECT_TAG_DIR_DST:
+            SCJbSetString(jb, "direction", "dst");
+            break;
+        default:
+            SCJbSetUint(jb, "direction", (uint64_t)data->direction);
+            break;
+    }
+
+    SCJbSetUint(jb, "count", (uint64_t)data->count);
+
+    switch (data->metric) {
+        case DETECT_TAG_METRIC_PACKET:
+            SCJbSetString(jb, "metric", "packets");
+            break;
+        case DETECT_TAG_METRIC_SECONDS:
+            SCJbSetString(jb, "metric", "seconds");
+            break;
+        case DETECT_TAG_METRIC_BYTES:
+            SCJbSetString(jb, "metric", "bytes");
+            break;
+        default:
+            SCJbSetUint(jb, "metric", (uint64_t)data->metric);
+            break;
+    }
+}
+
 /**
  * \brief Registration function for keyword tag
  */
@@ -72,6 +119,7 @@ void DetectTagRegister(void)
     sigmatch_table[DETECT_TAG].Match = DetectTagMatch;
     sigmatch_table[DETECT_TAG].Setup = DetectTagSetup;
     sigmatch_table[DETECT_TAG].Free  = DetectTagDataFree;
+    sigmatch_table[DETECT_TAG].DumpJSON = DetectTagDumpJSON;
     sigmatch_table[DETECT_TAG].desc = "tag of current and future packets for a flow or host";
     sigmatch_table[DETECT_TAG].url = "/rules/tag.html#tag";
 #ifdef UNITTESTS

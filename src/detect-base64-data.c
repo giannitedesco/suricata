@@ -24,11 +24,17 @@
 #include "detect-engine-build.h"
 
 #include "util-unittest.h"
+#include "rust.h"
 
 static int DetectBase64DataSetup(DetectEngineCtx *, Signature *, const char *);
 #ifdef UNITTESTS
 static void DetectBase64DataRegisterTests(void);
 #endif
+
+static void DetectBase64DataDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    SCJbSetString(jb, "note", "sets active list");
+}
 
 void DetectBase64DataRegister(void)
 {
@@ -38,6 +44,7 @@ void DetectBase64DataRegister(void)
     sigmatch_table[DETECT_BASE64_DATA].url =
         "/rules/base64-keywords.html#base64-data";
     sigmatch_table[DETECT_BASE64_DATA].Setup = DetectBase64DataSetup;
+    sigmatch_table[DETECT_BASE64_DATA].DumpJSON = DetectBase64DataDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BASE64_DATA].RegisterTests =
         DetectBase64DataRegisterTests;

@@ -60,6 +60,7 @@
 #include "app-layer-protos.h"
 #include "app-layer-parser.h"
 #include "util-pages.h"
+#include "rust.h"
 
 /* pcre named substring capture supports only 32byte names, A-z0-9 plus _
  * and needs to start with non-numeric. */
@@ -94,6 +95,39 @@ static void DetectPcreFree(DetectEngineCtx *, void *);
 static void DetectPcreRegisterTests(void);
 #endif
 
+static void DetectPcreDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectPcreData *pd = (const DetectPcreData *)ctx;
+
+    SCJbOpenArray(jb, "flags");
+    if (pd->flags & DETECT_PCRE_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (pd->flags & DETECT_PCRE_RAWBYTES)
+        SCJbAppendString(jb, "rawbytes");
+    if (pd->flags & DETECT_PCRE_CASELESS)
+        SCJbAppendString(jb, "caseless");
+    if (pd->flags & DETECT_PCRE_RELATIVE_NEXT)
+        SCJbAppendString(jb, "relative_next");
+    if (pd->flags & DETECT_PCRE_NEGATE)
+        SCJbAppendString(jb, "negate");
+    SCJbClose(jb);
+
+    SCJbSetUint(jb, "idx", (uint64_t)pd->idx);
+    SCJbSetInt(jb, "thread_ctx_id", (int64_t)pd->thread_ctx_id);
+
+    SCJbOpenArray(jb, "captypes");
+    for (uint8_t i = 0; i < DETECT_PCRE_CAPTURE_MAX; i++) {
+        SCJbAppendUint(jb, (uint64_t)pd->captypes[i]);
+    }
+    SCJbClose(jb);
+
+    SCJbOpenArray(jb, "capids");
+    for (uint8_t i = 0; i < DETECT_PCRE_CAPTURE_MAX; i++) {
+        SCJbAppendUint(jb, (uint64_t)pd->capids[i]);
+    }
+    SCJbClose(jb);
+}
+
 void DetectPcreRegister (void)
 {
     sigmatch_table[DETECT_PCRE].name = "pcre";
@@ -102,6 +136,7 @@ void DetectPcreRegister (void)
     sigmatch_table[DETECT_PCRE].Match = NULL;
     sigmatch_table[DETECT_PCRE].Setup = DetectPcreSetup;
     sigmatch_table[DETECT_PCRE].Free  = DetectPcreFree;
+    sigmatch_table[DETECT_PCRE].DumpJSON = DetectPcreDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_PCRE].RegisterTests  = DetectPcreRegisterTests;
 #endif

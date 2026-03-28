@@ -163,6 +163,8 @@ static const char *RunModeTranslateModeToName(int runmode)
 #endif
         case RUNMODE_LIB:
             return "LIB";
+        case RUNMODE_DUMP_RULES:
+            return "DUMP_RULES";
 
         default:
             FatalError("Unknown runtime mode. Aborting");

@@ -64,6 +64,55 @@ static int DetectByteMathSetup(DetectEngineCtx *, Signature *, const char *);
 static void DetectByteMathRegisterTests(void);
 #endif
 static void DetectByteMathFree(DetectEngineCtx *, void *);
+static void DetectByteMathDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
+
+static const char *ByteMathOperatorToString(ByteMathOperator oper)
+{
+    switch (oper) {
+        case Addition:
+            return "+";
+        case Subtraction:
+            return "-";
+        case Division:
+            return "/";
+        case Multiplication:
+            return "*";
+        case LeftShift:
+            return "<<";
+        case RightShift:
+            return ">>";
+        default:
+            return "none";
+    }
+}
+
+static const char *ByteMathEndianToString(ByteEndian endian)
+{
+    switch (endian) {
+        case BigEndian:
+            return "big";
+        case LittleEndian:
+            return "little";
+        case EndianDCE:
+            return "dce";
+        default:
+            return "unknown";
+    }
+}
+
+static const char *ByteMathBaseToString(ByteBase base)
+{
+    switch (base) {
+        case BaseOct:
+            return "oct";
+        case BaseDec:
+            return "dec";
+        case BaseHex:
+            return "hex";
+        default:
+            return "unset";
+    }
+}
 
 /**
  * \brief Registers the keyword handlers for the "byte_math" keyword.
@@ -74,11 +123,49 @@ void DetectBytemathRegister(void)
     sigmatch_table[DETECT_BYTEMATH].Match = NULL;
     sigmatch_table[DETECT_BYTEMATH].Setup = DetectByteMathSetup;
     sigmatch_table[DETECT_BYTEMATH].Free = DetectByteMathFree;
+    sigmatch_table[DETECT_BYTEMATH].DumpJSON = DetectByteMathDumpJSON;
     sigmatch_table[DETECT_BYTEMATH].desc = "used to perform mathematical operations on byte values";
     sigmatch_table[DETECT_BYTEMATH].url = "/rules/payload-keywords.html#byte-math";
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BYTEMATH].RegisterTests = DetectByteMathRegisterTests;
 #endif
+}
+
+static void DetectByteMathDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectByteMathData *data = (const DetectByteMathData *)ctx;
+
+    SCJbSetUint(jb, "nbytes", (uint64_t)data->nbytes);
+    SCJbSetInt(jb, "offset", (int64_t)data->offset);
+    SCJbSetString(jb, "oper", ByteMathOperatorToString(data->oper));
+    SCJbSetUint(jb, "rvalue", (uint64_t)data->rvalue);
+    if (data->rvalue_str != NULL)
+        SCJbSetString(jb, "rvalue_str", data->rvalue_str);
+    if (data->result != NULL)
+        SCJbSetString(jb, "result", data->result);
+    if (data->nbytes_str != NULL)
+        SCJbSetString(jb, "nbytes_str", data->nbytes_str);
+    SCJbSetString(jb, "endian", ByteMathEndianToString(data->endian));
+    SCJbSetString(jb, "base", ByteMathBaseToString(data->base));
+    SCJbSetUint(jb, "bitmask_val", (uint64_t)data->bitmask_val);
+    SCJbSetUint(jb, "bitmask_shift_count", (uint64_t)data->bitmask_shift_count);
+    SCJbSetUint(jb, "id", (uint64_t)data->id);
+    SCJbSetUint(jb, "local_id", (uint64_t)data->local_id);
+
+    SCJbOpenArray(jb, "flags");
+    if (data->flags & DETECT_BYTEMATH_FLAG_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (data->flags & DETECT_BYTEMATH_FLAG_STRING)
+        SCJbAppendString(jb, "string");
+    if (data->flags & DETECT_BYTEMATH_FLAG_BITMASK)
+        SCJbAppendString(jb, "bitmask");
+    if (data->flags & DETECT_BYTEMATH_FLAG_ENDIAN)
+        SCJbAppendString(jb, "endian");
+    if (data->flags & DETECT_BYTEMATH_FLAG_RVALUE_VAR)
+        SCJbAppendString(jb, "rvalue_var");
+    if (data->flags & DETECT_BYTEMATH_FLAG_NBYTES_VAR)
+        SCJbAppendString(jb, "nbytes_var");
+    SCJbClose(jb);
 }
 
 static inline bool DetectByteMathValidateNbytesOnly(const DetectByteMathData *data, int32_t nbytes)

@@ -38,6 +38,7 @@
 #include "detect-engine-build.h"
 #include "detect-engine-analyzer.h"
 #include "detect-engine-mpm.h"
+#include "detect-engine-sigdump.h"
 #include "detect-engine-sigorder.h"
 
 #include "util-detect.h"
@@ -191,6 +192,7 @@ static int DetectLoadSigFile(DetectEngineCtx *de_ctx, const char *sig_file, int 
                 }
             }
             SCLogDebug("signature %"PRIu32" loaded", sig->id);
+            SigDumpJSON(de_ctx, sig);
             good++;
         } else {
             if (!de_ctx->sigerror_silent) {

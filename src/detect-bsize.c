@@ -37,6 +37,7 @@
 #include "detect-bsize.h"
 
 #include "util-misc.h"
+#include "rust.h"
 
 /*prototypes*/
 static int DetectBsizeSetup (DetectEngineCtx *, Signature *, const char *);
@@ -93,6 +94,56 @@ value_error:
     return false;
 }
 
+static void DetectBsizeDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectU64Data *data = (const DetectU64Data *)ctx;
+
+    switch (data->mode) {
+        case DETECT_UINT_EQ:
+            SCJbSetUint(jb, "equal", data->arg1);
+            break;
+        case DETECT_UINT_NE:
+            SCJbSetUint(jb, "diff", data->arg1);
+            break;
+        case DETECT_UINT_LT:
+            SCJbSetUint(jb, "lt", data->arg1);
+            break;
+        case DETECT_UINT_LTE:
+            SCJbSetUint(jb, "lte", data->arg1);
+            break;
+        case DETECT_UINT_GT:
+            SCJbSetUint(jb, "gt", data->arg1);
+            break;
+        case DETECT_UINT_GTE:
+            SCJbSetUint(jb, "gte", data->arg1);
+            break;
+        case DETECT_UINT_RA:
+            SCJbOpenObject(jb, "range");
+            SCJbSetUint(jb, "min", data->arg1);
+            SCJbSetUint(jb, "max", data->arg2);
+            SCJbClose(jb);
+            break;
+        case DetectUintModeNegRg:
+            SCJbOpenObject(jb, "negated_range");
+            SCJbSetUint(jb, "min", data->arg1);
+            SCJbSetUint(jb, "max", data->arg2);
+            SCJbClose(jb);
+            break;
+        case DetectUintModeBitmask:
+            SCJbOpenObject(jb, "bitmask");
+            SCJbSetUint(jb, "mask", data->arg1);
+            SCJbSetUint(jb, "value", data->arg2);
+            SCJbClose(jb);
+            break;
+        case DetectUintModeNegBitmask:
+            SCJbOpenObject(jb, "negated_bitmask");
+            SCJbSetUint(jb, "mask", data->arg1);
+            SCJbSetUint(jb, "value", data->arg2);
+            SCJbClose(jb);
+            break;
+    }
+}
+
 /**
  * \brief Registration function for bsize: keyword
  */
@@ -105,6 +156,7 @@ void DetectBsizeRegister(void)
     sigmatch_table[DETECT_BSIZE].Match = NULL;
     sigmatch_table[DETECT_BSIZE].Setup = DetectBsizeSetup;
     sigmatch_table[DETECT_BSIZE].Free = DetectBsizeFree;
+    sigmatch_table[DETECT_BSIZE].DumpJSON = DetectBsizeDumpJSON;
     sigmatch_table[DETECT_BSIZE].flags = SIGMATCH_SUPPORT_FIREWALL;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BSIZE].RegisterTests = DetectBsizeRegisterTests;

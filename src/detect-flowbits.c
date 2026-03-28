@@ -68,6 +68,43 @@ void FlowBitsRegisterTests(void);
 static bool PrefilterFlowbitIsPrefilterable(const Signature *s);
 static int PrefilterSetupFlowbits(DetectEngineCtx *de_ctx, SigGroupHead *sgh);
 
+static const char *FlowbitsCmdToString(uint8_t cmd)
+{
+    switch (cmd) {
+        case DETECT_FLOWBITS_CMD_SET:
+            return "set";
+        case DETECT_FLOWBITS_CMD_TOGGLE:
+            return "toggle";
+        case DETECT_FLOWBITS_CMD_UNSET:
+            return "unset";
+        case DETECT_FLOWBITS_CMD_ISNOTSET:
+            return "isnotset";
+        case DETECT_FLOWBITS_CMD_ISSET:
+            return "isset";
+        default:
+            return "unknown";
+    }
+}
+
+static void DetectFlowbitsDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectFlowbitsData *fd = (const DetectFlowbitsData *)ctx;
+
+    SCJbSetString(jb, "name", VarNameStoreSetupLookup(fd->idx, VAR_TYPE_FLOW_BIT));
+    SCJbSetUint(jb, "idx", (uint64_t)fd->idx);
+    SCJbSetString(jb, "cmd", FlowbitsCmdToString(fd->cmd));
+    SCJbSetUint(jb, "or_list_size", (uint64_t)fd->or_list_size);
+    SCJbSetBool(jb, "post_rule_match_prefilter", fd->post_rule_match_prefilter);
+
+    if (fd->or_list != NULL) {
+        SCJbOpenArray(jb, "or_list");
+        for (uint8_t i = 0; i < fd->or_list_size; i++) {
+            SCJbAppendUint(jb, (uint64_t)fd->or_list[i]);
+        }
+        SCJbClose(jb);
+    }
+}
+
 void DetectFlowbitsRegister (void)
 {
     sigmatch_table[DETECT_FLOWBITS].name = "flowbits";
@@ -76,6 +113,7 @@ void DetectFlowbitsRegister (void)
     sigmatch_table[DETECT_FLOWBITS].Match = DetectFlowbitMatch;
     sigmatch_table[DETECT_FLOWBITS].Setup = DetectFlowbitSetup;
     sigmatch_table[DETECT_FLOWBITS].Free  = DetectFlowbitFree;
+    sigmatch_table[DETECT_FLOWBITS].DumpJSON = DetectFlowbitsDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_FLOWBITS].RegisterTests = FlowBitsRegisterTests;
 #endif

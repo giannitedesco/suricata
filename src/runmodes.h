@@ -61,6 +61,7 @@ typedef enum SCRunModes {
     RUNMODE_CHANGE_SERVICE_PARAMS,
 #endif
     RUNMODE_DUMP_FEATURES,
+    RUNMODE_DUMP_RULES,
     RUNMODE_MAX,
 } SCRunMode;
 

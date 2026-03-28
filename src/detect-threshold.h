@@ -68,7 +68,10 @@ typedef struct DetectThresholdData_ {
  * Registration function for threshold: keyword
  */
 
+struct SCJsonBuilder;
+
 void DetectThresholdRegister(void);
+void DetectThresholdDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
 DetectThresholdData *DetectThresholdDataCopy(DetectThresholdData *);
 
 #endif /*SURICATA_DETECT_THRESHOLD_H */

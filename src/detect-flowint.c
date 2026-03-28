@@ -46,6 +46,7 @@
 #include "pkt-var.h"
 #include "host.h"
 #include "util-profiling.h"
+#include "rust.h"
 
 /*                         name             modifiers          value      */
 #define PARSE_REGEX                                                                                \
@@ -64,6 +65,54 @@ void DetectFlowintFree(DetectEngineCtx *, void *);
 static void DetectFlowintRegisterTests(void);
 #endif
 
+static const char *FlowintModifierToString(uint8_t modifier)
+{
+    switch (modifier) {
+        case FLOWINT_MODIFIER_SET:
+            return "set";
+        case FLOWINT_MODIFIER_ADD:
+            return "add";
+        case FLOWINT_MODIFIER_SUB:
+            return "sub";
+        case FLOWINT_MODIFIER_LT:
+            return "lt";
+        case FLOWINT_MODIFIER_LE:
+            return "le";
+        case FLOWINT_MODIFIER_EQ:
+            return "eq";
+        case FLOWINT_MODIFIER_NE:
+            return "ne";
+        case FLOWINT_MODIFIER_GE:
+            return "ge";
+        case FLOWINT_MODIFIER_GT:
+            return "gt";
+        case FLOWINT_MODIFIER_ISSET:
+            return "isset";
+        case FLOWINT_MODIFIER_ISNOTSET:
+            return "isnotset";
+        default:
+            return "unknown";
+    }
+}
+
+static void DetectFlowintDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectFlowintData *fd = (const DetectFlowintData *)ctx;
+
+    if (fd->name != NULL)
+        SCJbSetString(jb, "name", fd->name);
+    SCJbSetUint(jb, "idx", (uint64_t)fd->idx);
+    SCJbSetString(jb, "modifier", FlowintModifierToString(fd->modifier));
+    SCJbSetUint(jb, "targettype", (uint64_t)fd->targettype);
+
+    if (fd->targettype == FLOWINT_TARGET_VAL) {
+        SCJbSetUint(jb, "value", (uint64_t)fd->target.value);
+    } else if (fd->targettype == FLOWINT_TARGET_VAR) {
+        if (fd->target.tvar.name != NULL)
+            SCJbSetString(jb, "tvar_name", fd->target.tvar.name);
+    }
+}
+
 void DetectFlowintRegister(void)
 {
     sigmatch_table[DETECT_FLOWINT].name = "flowint";
@@ -72,6 +121,7 @@ void DetectFlowintRegister(void)
     sigmatch_table[DETECT_FLOWINT].Match = DetectFlowintMatch;
     sigmatch_table[DETECT_FLOWINT].Setup = DetectFlowintSetup;
     sigmatch_table[DETECT_FLOWINT].Free = DetectFlowintFree;
+    sigmatch_table[DETECT_FLOWINT].DumpJSON = DetectFlowintDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_FLOWINT].RegisterTests = DetectFlowintRegisterTests;
 #endif

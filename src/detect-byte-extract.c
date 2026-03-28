@@ -62,6 +62,7 @@ static int DetectByteExtractSetup(DetectEngineCtx *, Signature *, const char *);
 static void DetectByteExtractRegisterTests(void);
 #endif
 static void DetectByteExtractFree(DetectEngineCtx *, void *);
+static void DetectByteExtractDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
 
 /**
  * \brief Registers the keyword handlers for the "byte_extract" keyword.
@@ -74,9 +75,75 @@ void DetectByteExtractRegister(void)
     sigmatch_table[DETECT_BYTE_EXTRACT].Match = NULL;
     sigmatch_table[DETECT_BYTE_EXTRACT].Setup = DetectByteExtractSetup;
     sigmatch_table[DETECT_BYTE_EXTRACT].Free = DetectByteExtractFree;
+    sigmatch_table[DETECT_BYTE_EXTRACT].DumpJSON = DetectByteExtractDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BYTE_EXTRACT].RegisterTests = DetectByteExtractRegisterTests;
 #endif
+}
+
+static const char *ByteEndianToString(ByteEndian endian)
+{
+    switch (endian) {
+        case BigEndian:
+            return "big";
+        case LittleEndian:
+            return "little";
+        case EndianDCE:
+            return "dce";
+        default:
+            return "unknown";
+    }
+}
+
+static const char *ByteBaseToString(ByteBase base)
+{
+    switch (base) {
+        case BaseOct:
+            return "oct";
+        case BaseDec:
+            return "dec";
+        case BaseHex:
+            return "hex";
+        default:
+            return "unset";
+    }
+}
+
+static void DetectByteExtractDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const SCDetectByteExtractData *data = (const SCDetectByteExtractData *)ctx;
+
+    SCJbSetUint(jb, "local_id", (uint64_t)data->local_id);
+    SCJbSetUint(jb, "nbytes", (uint64_t)data->nbytes);
+    SCJbSetInt(jb, "offset", (int64_t)data->offset);
+    if (data->name != NULL)
+        SCJbSetString(jb, "name", data->name);
+    SCJbSetString(jb, "endian", ByteEndianToString(data->endian));
+    SCJbSetString(jb, "base", ByteBaseToString(data->base));
+    SCJbSetUint(jb, "align_value", (uint64_t)data->align_value);
+    SCJbSetUint(jb, "multiplier_value", (uint64_t)data->multiplier_value);
+    SCJbSetUint(jb, "id", (uint64_t)data->id);
+
+    SCJbOpenArray(jb, "flags");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_STRING)
+        SCJbAppendString(jb, "string");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_ALIGN)
+        SCJbAppendString(jb, "align");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_ENDIAN)
+        SCJbAppendString(jb, "endian");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_SLICE)
+        SCJbAppendString(jb, "slice");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_MULTIPLIER)
+        SCJbAppendString(jb, "multiplier");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_NBYTES)
+        SCJbAppendString(jb, "nbytes");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_OFFSET)
+        SCJbAppendString(jb, "offset");
+    if (data->flags & DETECT_BYTE_EXTRACT_FLAG_BASE)
+        SCJbAppendString(jb, "base");
+    SCJbClose(jb);
 }
 
 int DetectByteExtractDoMatch(DetectEngineThreadCtx *det_ctx, const SigMatchData *smd,

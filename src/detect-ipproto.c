@@ -43,6 +43,7 @@
 #include "util-unittest-helper.h"
 
 #include "util-debug.h"
+#include "rust.h"
 
 /**
  * \brief Regex for parsing our options
@@ -57,6 +58,14 @@ static void DetectIPProtoRegisterTests(void);
 #endif
 static void DetectIPProtoFree(DetectEngineCtx *, void *);
 
+static void DetectIPProtoDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectIPProtoData *data = (const DetectIPProtoData *)ctx;
+    char op[2] = { (char)data->op, '\0' };
+    SCJbSetString(jb, "op", op);
+    SCJbSetUint(jb, "proto", (uint64_t)data->proto);
+}
+
 void DetectIPProtoRegister(void)
 {
     sigmatch_table[DETECT_IPPROTO].name = "ip_proto";
@@ -69,6 +78,7 @@ void DetectIPProtoRegister(void)
     sigmatch_table[DETECT_IPPROTO].RegisterTests = DetectIPProtoRegisterTests;
 #endif
     sigmatch_table[DETECT_IPPROTO].flags = SIGMATCH_QUOTES_OPTIONAL;
+    sigmatch_table[DETECT_IPPROTO].DumpJSON = DetectIPProtoDumpJSON;
 
     DetectSetupParseRegexes(PARSE_REGEX, &parse_regex);
 }

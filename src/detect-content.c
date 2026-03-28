@@ -51,10 +51,81 @@
 #include "host.h"
 #include "util-profiling.h"
 #include "detect-dsize.h"
+#include "rust.h"
 
 #ifdef UNITTESTS
 static void DetectContentRegisterTests(void);
 #endif
+
+static void DetectContentDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectContentData *cd = (const DetectContentData *)ctx;
+
+    SCJbSetPrintAsciiString(jb, "pattern", cd->content, cd->content_len);
+    SCJbSetHex(jb, "pattern_hex", cd->content, cd->content_len);
+    SCJbSetUint(jb, "content_len", (uint64_t)cd->content_len);
+
+    SCJbOpenArray(jb, "flags");
+    if (cd->flags & DETECT_CONTENT_NOCASE)
+        SCJbAppendString(jb, "nocase");
+    if (cd->flags & DETECT_CONTENT_DISTANCE)
+        SCJbAppendString(jb, "distance");
+    if (cd->flags & DETECT_CONTENT_WITHIN)
+        SCJbAppendString(jb, "within");
+    if (cd->flags & DETECT_CONTENT_OFFSET)
+        SCJbAppendString(jb, "offset");
+    if (cd->flags & DETECT_CONTENT_DEPTH)
+        SCJbAppendString(jb, "depth");
+    if (cd->flags & DETECT_CONTENT_FAST_PATTERN)
+        SCJbAppendString(jb, "fast_pattern");
+    if (cd->flags & DETECT_CONTENT_FAST_PATTERN_ONLY)
+        SCJbAppendString(jb, "fast_pattern_only");
+    if (cd->flags & DETECT_CONTENT_FAST_PATTERN_CHOP)
+        SCJbAppendString(jb, "fast_pattern_chop");
+    if (cd->flags & DETECT_CONTENT_RAWBYTES)
+        SCJbAppendString(jb, "rawbytes");
+    if (cd->flags & DETECT_CONTENT_NEGATED)
+        SCJbAppendString(jb, "negated");
+    if (cd->flags & DETECT_CONTENT_ENDS_WITH)
+        SCJbAppendString(jb, "ends_with");
+    if (cd->flags & DETECT_CONTENT_OFFSET_VAR)
+        SCJbAppendString(jb, "offset_var");
+    if (cd->flags & DETECT_CONTENT_DEPTH_VAR)
+        SCJbAppendString(jb, "depth_var");
+    if (cd->flags & DETECT_CONTENT_DISTANCE_VAR)
+        SCJbAppendString(jb, "distance_var");
+    if (cd->flags & DETECT_CONTENT_WITHIN_VAR)
+        SCJbAppendString(jb, "within_var");
+    if (cd->flags & DETECT_CONTENT_REPLACE)
+        SCJbAppendString(jb, "replace");
+    if (cd->flags & DETECT_CONTENT_NO_DOUBLE_INSPECTION_REQUIRED)
+        SCJbAppendString(jb, "no_double_inspection_required");
+    if (cd->flags & DETECT_CONTENT_WITHIN_NEXT)
+        SCJbAppendString(jb, "within_next");
+    if (cd->flags & DETECT_CONTENT_DISTANCE_NEXT)
+        SCJbAppendString(jb, "distance_next");
+    if (cd->flags & DETECT_CONTENT_STARTS_WITH)
+        SCJbAppendString(jb, "starts_with");
+    if (cd->flags & DETECT_CONTENT_MPM)
+        SCJbAppendString(jb, "mpm");
+    if (cd->flags & DETECT_CONTENT_WITHIN2DEPTH)
+        SCJbAppendString(jb, "within2depth");
+    if (cd->flags & DETECT_CONTENT_DISTANCE2OFFSET)
+        SCJbAppendString(jb, "distance2offset");
+    SCJbClose(jb);
+
+    SCJbSetUint(jb, "depth", (uint64_t)cd->depth);
+    SCJbSetUint(jb, "offset", (uint64_t)cd->offset);
+    SCJbSetInt(jb, "distance", (int64_t)cd->distance);
+    SCJbSetInt(jb, "within", (int64_t)cd->within);
+    SCJbSetUint(jb, "fp_chop_offset", (uint64_t)cd->fp_chop_offset);
+    SCJbSetUint(jb, "fp_chop_len", (uint64_t)cd->fp_chop_len);
+    SCJbSetUint(jb, "id", (uint64_t)cd->id);
+
+    if (cd->replace != NULL) {
+        SCJbSetUint(jb, "replace_len", (uint64_t)cd->replace_len);
+    }
+}
 
 void DetectContentRegister (void)
 {
@@ -64,6 +135,7 @@ void DetectContentRegister (void)
     sigmatch_table[DETECT_CONTENT].Match = NULL;
     sigmatch_table[DETECT_CONTENT].Setup = DetectContentSetup;
     sigmatch_table[DETECT_CONTENT].Free  = DetectContentFree;
+    sigmatch_table[DETECT_CONTENT].DumpJSON = DetectContentDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_CONTENT].RegisterTests = DetectContentRegisterTests;
 #endif

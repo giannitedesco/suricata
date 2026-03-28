@@ -44,6 +44,7 @@
 #include "util-unittest.h"
 #include "util-debug.h"
 #include "detect-pcre.h"
+#include "rust.h"
 
 
 /**
@@ -71,6 +72,7 @@ static DetectParseRegex parse_regex;
 
 static int DetectBytetestSetup(DetectEngineCtx *de_ctx, Signature *s, const char *optstr);
 static void DetectBytetestFree(DetectEngineCtx *, void *ptr);
+static void DetectBytetestDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb);
 #ifdef UNITTESTS
 static void DetectBytetestRegisterTests(void);
 #endif
@@ -82,10 +84,88 @@ void DetectBytetestRegister (void)
     sigmatch_table[DETECT_BYTETEST].url = "/rules/payload-keywords.html#byte-test";
     sigmatch_table[DETECT_BYTETEST].Setup = DetectBytetestSetup;
     sigmatch_table[DETECT_BYTETEST].Free  = DetectBytetestFree;
+    sigmatch_table[DETECT_BYTETEST].DumpJSON = DetectBytetestDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_BYTETEST].RegisterTests = DetectBytetestRegisterTests;
 #endif
     DetectSetupParseRegexes(PARSE_REGEX, &parse_regex);
+}
+
+static void DetectBytetestDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectBytetestData *data = (const DetectBytetestData *)ctx;
+
+    SCJbSetUint(jb, "nbytes", (uint64_t)data->nbytes);
+
+    switch (data->op) {
+        case DETECT_BYTETEST_OP_LT:
+            SCJbSetString(jb, "op", "<");
+            break;
+        case DETECT_BYTETEST_OP_GT:
+            SCJbSetString(jb, "op", ">");
+            break;
+        case DETECT_BYTETEST_OP_EQ:
+            SCJbSetString(jb, "op", "=");
+            break;
+        case DETECT_BYTETEST_OP_AND:
+            SCJbSetString(jb, "op", "&");
+            break;
+        case DETECT_BYTETEST_OP_OR:
+            SCJbSetString(jb, "op", "|");
+            break;
+        case DETECT_BYTETEST_OP_GE:
+            SCJbSetString(jb, "op", ">=");
+            break;
+        case DETECT_BYTETEST_OP_LE:
+            SCJbSetString(jb, "op", "<=");
+            break;
+        default:
+            SCJbSetString(jb, "op", "unknown");
+            break;
+    }
+
+    switch (data->base) {
+        case DETECT_BYTETEST_BASE_OCT:
+            SCJbSetString(jb, "base", "oct");
+            break;
+        case DETECT_BYTETEST_BASE_DEC:
+            SCJbSetString(jb, "base", "dec");
+            break;
+        case DETECT_BYTETEST_BASE_HEX:
+            SCJbSetString(jb, "base", "hex");
+            break;
+        default:
+            SCJbSetString(jb, "base", "unset");
+            break;
+    }
+
+    SCJbSetUint(jb, "bitmask_shift_count", (uint64_t)data->bitmask_shift_count);
+
+    SCJbOpenArray(jb, "flags");
+    if (data->flags & DETECT_BYTETEST_LITTLE)
+        SCJbAppendString(jb, "little");
+    if (data->flags & DETECT_BYTETEST_BIG)
+        SCJbAppendString(jb, "big");
+    if (data->flags & DETECT_BYTETEST_STRING)
+        SCJbAppendString(jb, "string");
+    if (data->flags & DETECT_BYTETEST_RELATIVE)
+        SCJbAppendString(jb, "relative");
+    if (data->flags & DETECT_BYTETEST_DCE)
+        SCJbAppendString(jb, "dce");
+    if (data->flags & DETECT_BYTETEST_BITMASK)
+        SCJbAppendString(jb, "bitmask");
+    if (data->flags & DETECT_BYTETEST_VALUE_VAR)
+        SCJbAppendString(jb, "value_var");
+    if (data->flags & DETECT_BYTETEST_OFFSET_VAR)
+        SCJbAppendString(jb, "offset_var");
+    if (data->flags & DETECT_BYTETEST_NBYTES_VAR)
+        SCJbAppendString(jb, "nbytes_var");
+    SCJbClose(jb);
+
+    SCJbSetBool(jb, "neg_op", data->neg_op);
+    SCJbSetInt(jb, "offset", (int64_t)data->offset);
+    SCJbSetUint(jb, "bitmask", (uint64_t)data->bitmask);
+    SCJbSetUint(jb, "value", data->value);
 }
 
 /* 23 - This is the largest string (octal, with a zero prefix) that

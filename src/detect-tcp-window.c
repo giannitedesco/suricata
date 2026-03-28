@@ -33,6 +33,8 @@
 #include "flow.h"
 #include "flow-var.h"
 
+#include "rust.h"
+
 #include "util-debug.h"
 #include "util-unittest.h"
 #include "util-unittest-helper.h"
@@ -53,6 +55,14 @@ static void DetectWindowRegisterTests(void);
 #endif
 void DetectWindowFree(DetectEngineCtx *, void *);
 
+static void DetectTcpWindowDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectWindowData *wd = (const DetectWindowData *)ctx;
+
+    SCJbSetBool(jb, "negated", wd->negated);
+    SCJbSetUint(jb, "size", wd->size);
+}
+
 /**
  * \brief Registration function for window: keyword
  */
@@ -65,6 +75,7 @@ void DetectWindowRegister (void)
     sigmatch_table[DETECT_WINDOW].Match = DetectWindowMatch;
     sigmatch_table[DETECT_WINDOW].Setup = DetectWindowSetup;
     sigmatch_table[DETECT_WINDOW].Free  = DetectWindowFree;
+    sigmatch_table[DETECT_WINDOW].DumpJSON = DetectTcpWindowDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_WINDOW].RegisterTests = DetectWindowRegisterTests;
 #endif

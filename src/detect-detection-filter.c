@@ -27,6 +27,7 @@
 #include "suricata.h"
 #include "decode.h"
 #include "detect.h"
+#include "rust.h"
 
 #include "host.h"
 
@@ -61,6 +62,28 @@ static void DetectDetectionFilterRegisterTests(void);
 #endif
 static void DetectDetectionFilterFree(DetectEngineCtx *, void *);
 
+static void DetectDetectionFilterDumpJSON(const SigMatchCtx *ctx, struct SCJsonBuilder *jb)
+{
+    const DetectThresholdData *df = (const DetectThresholdData *)ctx;
+
+    const char * track_str = "unknown";
+
+    switch (df->track) {
+    case TRACK_SRC:
+        track_str = "by_src";
+        break;
+    case TRACK_DST:
+        track_str = "by_dst";
+        break;
+    case TRACK_FLOW:
+        track_str = "by_flow";
+        break;
+    }
+    SCJbSetString(jb, "track", track_str);
+    SCJbSetUint(jb, "count", df->count);
+    SCJbSetUint(jb, "seconds", df->seconds);
+}
+
 /**
  * \brief Registration function for detection_filter: keyword
  */
@@ -73,6 +96,7 @@ void DetectDetectionFilterRegister(void)
     sigmatch_table[DETECT_DETECTION_FILTER].Match = DetectDetectionFilterMatch;
     sigmatch_table[DETECT_DETECTION_FILTER].Setup = DetectDetectionFilterSetup;
     sigmatch_table[DETECT_DETECTION_FILTER].Free = DetectDetectionFilterFree;
+    sigmatch_table[DETECT_DETECTION_FILTER].DumpJSON = DetectDetectionFilterDumpJSON;
 #ifdef UNITTESTS
     sigmatch_table[DETECT_DETECTION_FILTER].RegisterTests = DetectDetectionFilterRegisterTests;
 #endif

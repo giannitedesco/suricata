@@ -54,6 +54,7 @@
 #include "detect-engine-address.h"
 #include "detect-engine-alert.h"
 #include "detect-engine-port.h"
+#include "detect-engine-sigdump.h"
 #include "detect-engine-tag.h"
 #include "detect-engine-threshold.h"
 #include "detect-fast-pattern.h"
@@ -728,6 +729,7 @@ static void PrintUsage(const char *progname)
     printf("\t--list-app-layer-frames              : list supported app layer frames for use with "
            "'frame' keyword\n");
     printf("\t--dump-config                        : show the running configuration\n");
+    printf("\t--dump-rules[=filename]              : output the parsed ruleset\n");
     printf("\t--dump-features                      : display provided features\n");
     printf("\t--build-info                         : display build information\n");
 
@@ -1384,6 +1386,7 @@ TmEcode SCParseCommandLine(int argc, char **argv)
     int opt;
 
     int dump_config = 0;
+    int dump_rules = 0;
     int dump_features = 0;
     int list_app_layer_protocols = 0;
     int list_app_layer_hooks = 0;
@@ -1407,6 +1410,7 @@ TmEcode SCParseCommandLine(int argc, char **argv)
     struct option long_opts[] = {
         {"help", 0, 0, 0},
         {"dump-config", 0, &dump_config, 1},
+        {"dump-rules", optional_argument, &dump_rules, 1},
         {"dump-features", 0, &dump_features, 1},
         {"pfring", optional_argument, 0, 0},
         {"pfring-int", required_argument, 0, 0},
@@ -1648,6 +1652,8 @@ TmEcode SCParseCommandLine(int argc, char **argv)
                         suri->keyword_info = optarg;
                     }
                 }
+            } else if (strcmp((long_opts[option_index]).name, "dump-rules") == 0) {
+                suri->rules_dump_file = optarg;
             } else if (strcmp((long_opts[option_index]).name, "runmode") == 0) {
                 suri->runmode_custom_mode = optarg;
             } else if (strcmp((long_opts[option_index]).name, "engine-analysis") == 0) {
@@ -2145,6 +2151,10 @@ TmEcode SCParseCommandLine(int argc, char **argv)
         suri->run_mode = RUNMODE_LIST_UNITTEST;
     if (dump_config)
         suri->run_mode = RUNMODE_DUMP_CONFIG;
+    if (dump_rules) {
+        suri->run_mode = RUNMODE_DUMP_RULES;
+        SigDumpInit(suri->rules_dump_file);
+    }
     if (dump_features)
         suri->run_mode = RUNMODE_DUMP_FEATURES;
     if (conf_test)
@@ -2523,6 +2533,10 @@ static int LoadSignatures(DetectEngineCtx *de_ctx, SCInstance *suri)
         SCLogError("Loading signatures failed.");
         if (de_ctx->failure_fatal)
             return TM_ECODE_FAILED;
+    }
+
+    if (suricata.run_mode == RUNMODE_DUMP_RULES) {
+        exit(EXIT_SUCCESS);
     }
 
     return TM_ECODE_OK;
